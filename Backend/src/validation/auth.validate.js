@@ -52,3 +52,22 @@ export const registerValidator = [
 
     validate,
 ];
+
+export const loginValidator = [
+    body("username")
+        .optional()
+        .trim()
+        .toLowerCase()
+        .isLength({ min: 3 })
+        .withMessage("Username must be at least 3 characters"),
+
+    body("email")
+        .optional()
+        .isEmail()
+        .withMessage("Enter a valid email")
+        .normalizeEmail(),
+
+    body("password").notEmpty().withMessage("Password is required"),
+
+    validate,
+];
