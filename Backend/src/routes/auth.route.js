@@ -7,6 +7,7 @@ import {
     getMeController,
     loginController,
     registerController,
+    resendEmailController,
     verifyEmailController,
 } from "../controllers/auth.controller.js";
 import { identifyUser } from "../middlewares/auth.middleware.js";
@@ -47,4 +48,13 @@ authRouter.get("/get-me", identifyUser, getMeController);
  */
 
 authRouter.get("/verify-email", verifyEmailController);
+
+/**
+ * @name resendEmailController
+ * @description resend email verification link
+ * @route POST /api/auth/resend-email
+ * @access public
+ */
+authRouter.post("/resend-verify-email", resendEmailController);
+
 export default authRouter;

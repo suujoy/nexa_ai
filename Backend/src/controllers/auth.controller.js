@@ -86,7 +86,7 @@ export const loginController = async (req, res, next) => {
             return res.status(400).json({
                 success: false,
                 message: "User not found",
-                err: err,
+                err: "User not found",
             });
         }
 
@@ -103,7 +103,7 @@ export const loginController = async (req, res, next) => {
         if (!user.verified) {
             return res.status(400).json({
                 success: false,
-                message: "Please veryfy your email before login in",
+                message: "Please verify your email before login in",
                 err: "Email not verified",
             });
         }
@@ -175,24 +175,102 @@ export const verifyEmailController = async (req, res) => {
         const user = await userModel.findOne({ email: decoded.email });
 
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "Invalid token",
-                err: "User not found",
-            });
+            return res.status(404).send("Invalid verification link");
+        }
+
+        const verifiedHtml = `
+        <html>
+        <body style="font-family:Arial;text-align:center;padding-top:100px">
+        <h1 style="color:green">Email Verified</h1>
+        <p>Your email has been successfully verified.</p>
+        <a href="http://localhost:5173/login">Go to Login</a>
+        </body>
+        </html>
+        `;
+
+        const alreadyVerifiedHtml = `
+        <html>
+        <body style="font-family:Arial;text-align:center;padding-top:100px">
+        <h1 style="color:#2563eb">Email Already Verified</h1>
+        <p>Your email is already verified.</p>
+        <a href="http://localhost:5173/login">Go to Login</a>
+        </body>
+        </html>
+        `;
+
+        if (user.verified) {
+            return res.send(alreadyVerifiedHtml);
         }
 
         user.verified = true;
         await user.save();
 
-        const html = `<h1> hello ${user.name}</h1>`;
-
-        return res.send(html);
+        return res.send(verifiedHtml);
     } catch (err) {
-        res.status(400).json({
+        return res.status(400).send("Invalid or expired verification link");
+    }
+};
+
+/**
+ * @name resendEmailController
+ * @description resend email verification link
+ * @route POST /api/auth/resend-email
+ * @access public
+ * @body {email}
+ */
+export const resendEmailController = async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({
             success: false,
-            message: "Invalid token",
-            err: err.message,
+            message: "Email is required",
+            err: "Email is required",
         });
     }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+        return res.status(404).json({
+            success: false,
+            message: "User not found",
+            err: "User not found",
+        });
+    }
+
+    if (user.verified) {
+        return res.status(400).json({
+            success: false,
+            message: "Email already verified",
+            err: "Email already verified",
+        });
+    }
+
+    const emailVerificationToken = jwt.sign(
+        {
+            email: user.email,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" },
+    );
+
+    await sendEmail({
+        to: email,
+        subject: "Welcome to Nexa Ai Chatbot",
+        text: `Verify your email to start using Nexa Ai Chatbot`,
+        html: `<p>Hi ${user.name},</p>
+                    <p>Verify your email to start using <strong>Nexa Ai Chatbot</strong>
+                    <p>Please click on the link below to verify your email:
+                    <a href="http://localhost:3000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a></p>
+                    <p>Thanks,<br>Nexa Ai Chatbot</p>
+                    <P>This is an automatically generated email. Please do not reply.</P>
+                    <P>Best regards,<br>Nexa Ai Chatbot</P>
+           `,
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Email sent successfully",
+    });
 };

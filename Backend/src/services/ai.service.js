@@ -5,8 +5,18 @@ const model = new ChatGoogleGenerativeAI({
     apiKey: process.env.GEMINI_API_KEY,
 });
 
+// export const testAi = async () => {
+//     model.invoke(" ").then((res) => {
+//         console.log(res.content);
+//     });
+// };
+
+
 export const testAi = async () => {
-    model.invoke("hello").then((res) => {
+    try {
+        const res = await model.invoke("Hello AI");
         console.log(res.content);
-    });
+    } catch (err) {
+        console.log("AI Error:", err.message);
+    }
 };
