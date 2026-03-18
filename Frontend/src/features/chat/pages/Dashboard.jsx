@@ -1,12 +1,16 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React from 'react'
+import { useSelector } from 'react-redux'
+
 
 const Dashboard = () => {
 
-    const { user } = useSelector((state) => state.auth);
-    console.log(user)
-    
-    return <div></div>;
-};
+    const {user}=useSelector((state)=>state.auth)
+    console.log(user);
+  return (
+    <div>
+      Dashbosard
+    </div>
+  )
+}
 
-export default Dashboard;
+export default Dashboard
