@@ -2,7 +2,7 @@ import "dotenv/config";
 import http from "http";
 import app from "./src/app.js";
 import connectToDB from "./src/config/database.js";
-import { initSocket } from "./src/sockets/server.socket.js";
+import { initSocket } from "./src/socket/socket.server.js";
 
 
 

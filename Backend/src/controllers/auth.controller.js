@@ -33,6 +33,7 @@ export const registerController = async (req, res, next) => {
 
         const emailVerificationToken = jwt.sign(
             {
+                id: user._id,
                 email: user.email,
             },
             process.env.JWT_SECRET,
@@ -249,6 +250,7 @@ export const resendEmailController = async (req, res) => {
 
     const emailVerificationToken = jwt.sign(
         {
+            id: user._id,
             email: user.email,
         },
         process.env.JWT_SECRET,

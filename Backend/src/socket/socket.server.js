@@ -10,16 +10,16 @@ export const initSocket = (httpServer) => {
         },
     });
 
-    console.log("Socket io server is running ");
+    console.log("Socket io server is RUNNING");
 
     io.on("connection", (socket) => {
-        console.log(`A user connected ${socket.id}`);
+        console.log(`A user connected  ${socket.id}`);
     });
 };
 
 export const getIo = () => {
     if (!io) {
-        throw new Error("Socket.io is not initialized");
+        throw new Error("Socket io not initialize");
     }
 
     return io;
