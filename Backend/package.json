@@ -16,6 +16,7 @@
         "multer": "^2.1.1",
         "nodemailer": "^8.0.2",
         "react-redux": "^9.2.0",
+        "resend": "^6.9.4",
         "socket.io": "^4.8.3",
         "validation": "^0.0.1"
     },
