@@ -41,30 +41,30 @@
 //     const details = await transporter.sendMail(mailOptions);
 //     console.log(details);
 // };
-import nodemailer from "nodemailer";
 
-// Brevo SMTP - works on Render free tier (port 587 is allowed)
-const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false,
-    auth: {
-        user: process.env.BREVO_SMTP_USER, // your Brevo login email
-        pass: process.env.BREVO_SMTP_PASS, // SMTP password from Brevo dashboard (NOT your login password)
-    },
-});
 
-transporter
-    .verify()
-    .then(() => console.log("✅ Email transporter ready"))
-    .catch((err) => console.error("❌ Email transporter failed:", err.message));
 
+// Uses Brevo HTTP API (not SMTP) — works on Render free tier
 export const sendEmail = async ({ to, subject, text, html }) => {
-    await transporter.sendMail({
-        from: `"Nexa AI" <${process.env.BREVO_SENDER_EMAIL}>`,
-        to,
-        subject,
-        html,
-        text,
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "api-key": process.env.BREVO_API_KEY,
+        },
+        body: JSON.stringify({
+            sender: { name: "Nexa AI", email: process.env.BREVO_SENDER_EMAIL },
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+            textContent: text,
+        }),
     });
+
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(`Brevo API error: ${err.message}`);
+    }
+
+    console.log("✅ Email sent to", to);
 };
