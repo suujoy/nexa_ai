@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:3000/api/chat",
+    baseURL: "https://nexa-ai-v1j9.onrender.com",
     withCredentials: true,
 });
 

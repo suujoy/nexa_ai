@@ -1,10 +1,9 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:3000",
+    baseURL: "https://nexa-ai-v1j9.onrender.com",
     withCredentials: true,
 });
-
 export const register = async ({ name, username, email, password }) => {
     const { data } = await api.post("/api/auth/register", {
         name,
