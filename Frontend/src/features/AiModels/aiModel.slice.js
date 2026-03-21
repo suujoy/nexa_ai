@@ -1,8 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const modelSlice = createSlice({
+const aiModelSlice = createSlice({
     name: "model",
-    initialState: { selectedModel: "groq" },
+    initialState: {
+        selectedModel: "groq",
+    },
     reducers: {
         setModel: (state, action) => {
             state.selectedModel = action.payload;
@@ -10,5 +12,5 @@ const modelSlice = createSlice({
     },
 });
 
-export const { setModel } = modelSlice.actions;
-export default modelSlice.reducer;
+export const { setModel } = aiModelSlice.actions;
+export default aiModelSlice.reducer;
