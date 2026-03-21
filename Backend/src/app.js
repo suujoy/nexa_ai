@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import morgan from "morgan";
 import chatRouter from "./routes/chat.route.js";
+import messageRouter from "./routes/message.route.js";
 
 const app = express();
 
@@ -24,7 +25,8 @@ app.use(
  * middlewares routes
  */
 app.use("/api/auth", authRouter);
-app.use("/api/chats", chatRouter);
+app.use("/api/chat", chatRouter);
+app.use("/api/message", messageRouter);
 
 /**
  * Error handler Middleware

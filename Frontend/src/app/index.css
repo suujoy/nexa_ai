@@ -1,1 +1,41 @@
+@custom-variant dark (&:where(.dark, .dark *));
 @import "tailwindcss";
+
+@theme {
+    --color-app-bg: #f8fafc;
+    --color-app-fg: #0f172a;
+}
+
+:root {
+    color-scheme: light;
+}
+
+:root.dark {
+    color-scheme: dark;
+}
+
+html,
+body,
+#root {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    background:
+        radial-gradient(circle at top left, rgba(16, 185, 129, 0.18), transparent 32%),
+        radial-gradient(circle at top right, rgba(236, 72, 153, 0.16), transparent 28%),
+        #f8fafc;
+    color: #0f172a;
+    /* transition:
+        background-color 180ms ease,
+        color 180ms ease; */
+}
+
+.dark body {
+    background:
+        radial-gradient(circle at top left, rgba(16, 185, 129, 0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(236, 72, 153, 0.12), transparent 24%),
+        #020617;
+    color: #e2e8f0;
+}

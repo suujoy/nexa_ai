@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { register, login, getMe } from "../service/auth.api";
 import { setError, setUser, setLoading } from "../auth.slice";
@@ -5,10 +6,10 @@ import { setError, setUser, setLoading } from "../auth.slice";
 export const useAuth = () => {
     const dispatch = useDispatch();
 
-    const handleRegister = async ({ name, username, email, password }) => {
+    const handleRegister = useCallback(async ({ name, username, email, password }) => {
         try {
             dispatch(setLoading(true));
-            const { user } = await register({
+            await register({
                 name,
                 username,
                 email,
@@ -19,9 +20,9 @@ export const useAuth = () => {
         } finally {
             dispatch(setLoading(false));
         }
-    };
+    }, [dispatch]);
 
-    const handleLogin = async ({ email, password }) => {
+    const handleLogin = useCallback(async ({ email, password }) => {
         try {
             dispatch(setLoading(true));
             const { user } = await login({ email, password });
@@ -31,9 +32,9 @@ export const useAuth = () => {
         } finally {
             dispatch(setLoading(false));
         }
-    };
+    }, [dispatch]);
 
-    const handleGetMe = async () => {
+    const handleGetMe = useCallback(async () => {
         try {
             dispatch(setLoading(true));
             const { user } = await getMe();
@@ -43,7 +44,7 @@ export const useAuth = () => {
         } finally {
             dispatch(setLoading(false));
         }
-    };
+    }, [dispatch]);
 
     return {
         handleRegister,
