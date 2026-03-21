@@ -2,8 +2,8 @@ import axios from "axios";
 
 const api = axios.create({ baseURL: "https://nexa-ai-v1j9.onrender.com/api/chat", withCredentials: true });
 
-export const createChat = async () => {
-    const { data } = await api.post("/");
+export const createChat = async (model = "groq") => {
+    const { data } = await api.post("/", { model });
     return data.chat;
 };
 
