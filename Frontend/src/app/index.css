@@ -39,3 +39,7 @@ body {
         #020617;
     color: #e2e8f0;
 }
+
+.chat-window::-webkit-scrollbar{
+    display: none;
+}

@@ -1,16 +1,44 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { FaRobot } from "react-icons/fa";
+import { FaRobot, FaArrowDown } from "react-icons/fa";
 
 const ChatWindow = () => {
     const messages = useSelector((state) => state.chat.messages);
     const currentChat = useSelector((state) => state.chat.currentChat);
     const user = useSelector((state) => state.auth.user);
-    const bottomRef = useRef(null);
 
+    const bottomRef = useRef(null);
+    const containerRef = useRef(null);
+
+    const [showScroll, setShowScroll] = useState(false);
+
+    // Detect scroll position
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        const handleScroll = () => {
+            const isBottom =
+                el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+
+            setShowScroll(!isBottom);
+        };
+
+        el.addEventListener("scroll", handleScroll);
+        return () => el.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    // Auto scroll on new messages
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+
+    const scrollToBottom = () => {
+        containerRef.current?.scrollTo({
+            top: containerRef.current.scrollHeight,
+            behavior: "smooth",
+        });
+    };
 
     if (!currentChat) {
         return (
@@ -33,7 +61,10 @@ const ChatWindow = () => {
     }
 
     return (
-        <div className="h-full overflow-y-auto px-2 sm:px-4 md:px-6 py-4 sm:py-6 flex flex-col gap-3 sm:gap-4">
+        <div
+            ref={containerRef}
+            className="h-full overflow-y-auto px-4 py-6 flex flex-col gap-4 relative"
+        >
             {messages.map((msg) =>
                 msg.role === "user" ? (
                     <UserMessage key={msg._id} msg={msg} user={user} />
@@ -41,7 +72,18 @@ const ChatWindow = () => {
                     <AiMessage key={msg._id} msg={msg} />
                 ),
             )}
+
             <div ref={bottomRef} />
+
+            {/* Scroll Button */}
+            {showScroll && (
+                <button
+                    onClick={scrollToBottom}
+                    className="absolute bottom-20 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg hover:bg-emerald-400 transition"
+                >
+                    <FaArrowDown size={14} />
+                </button>
+            )}
         </div>
     );
 };
