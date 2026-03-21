@@ -7,17 +7,11 @@ const chatSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
-        title: {
-            type: String,
-            required: true,
-            trim: true,
-        },
+        // title starts empty, auto-generated on first message
+        title: { type: String, default: "", trim: true },
+        model: { type: String, default: "groq" },
     },
-    {
-        timestamps: true,
-    },
+    { timestamps: true },
 );
 
-const chatModel = mongoose.model("Chat", chatSchema);
-
-export default chatModel;
+export default mongoose.model("Chat", chatSchema);

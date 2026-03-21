@@ -1,20 +1,21 @@
 import { Router } from "express";
 import {
-    deleteMessageWithAI,
-    getMessagesByChatId,
-    sendMessage,
-    updateMessageWithAI,
+    deleteMessageWithAI, getMessagesByChatId, sendMessage, updateMessageWithAI,
 } from "../controllers/message.controller.js";
 import { identifyUser } from "../middlewares/auth.middleware.js";
 
 const messageRouter = Router();
 
+// POST   /api/message/:chatId
 messageRouter.post("/:chatId", identifyUser, sendMessage);
 
-messageRouter.get("/messages/:chatId", getMessagesByChatId);
+// PATCH  /api/message/messages/update/:messageId  (must be before /:chatId pattern)
+messageRouter.patch("/messages/update/:messageId", identifyUser, updateMessageWithAI);
 
-messageRouter.patch("/messages/update/:messageId", updateMessageWithAI);
+// GET    /api/message/messages/:chatId
+messageRouter.get("/messages/:chatId", identifyUser, getMessagesByChatId);
 
-messageRouter.delete("/messages/:messageId", deleteMessageWithAI);
+// DELETE /api/message/messages/:messageId
+messageRouter.delete("/messages/:messageId", identifyUser, deleteMessageWithAI);
 
 export default messageRouter;

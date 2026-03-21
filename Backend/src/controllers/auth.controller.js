@@ -3,24 +3,20 @@ import jwt from "jsonwebtoken";
 import { sendEmail } from "../services/mail.service.js";
 
 /**
- * @name registerController
- * @description register user
  * @route POST /api/auth/register
  * @access public
- * @body {name, username, email, password  }
  */
 export const registerController = async (req, res, next) => {
     try {
         const { name, username, email, password } = req.body;
 
         const isUserExist = await userModel.findOne({
-            $or: [{ username: username }, { email: email }],
+            $or: [{ username }, { email }],
         });
-
         if (isUserExist) {
             return res.status(400).json({
                 success: false,
-                message: `User already exist with this ${isUserExist.email ? "email" : "username"}`,
+                message: `User already exists with this ${isUserExist.email === email ? "email" : "username"}`,
             });
         }
 
@@ -32,32 +28,22 @@ export const registerController = async (req, res, next) => {
         });
 
         const emailVerificationToken = jwt.sign(
-            {
-                id: user._id,
-                email: user.email,
-            },
+            { id: user._id, email: user.email },
             process.env.JWT_SECRET,
         );
 
         await sendEmail({
             to: email,
-            subject: "Welcome to Nexa Ai Chatbot",
-            text: `Verify your email to start using Nexa Ai Chatbot`,
+            subject: "Verify your Nexa AI account",
             html: `<p>Hi ${user.name},</p>
-                    <p>Verify your email to start using <strong>Nexa Ai Chatbot</strong>
-                    <p>Please click on the link below to verify your email:
-                    <a href="http://localhost:3000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a></p>
-                    <p>Thanks,<br>Nexa Ai Chatbot</p>
-                    <P>This is an automatically generated email. Please do not reply.</P>
-                    <P>Best regards,<br>Nexa Ai Chatbot</P>
-           `,
+                   <p>Click to verify your email:
+                   <a href="http://localhost:3000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a></p>`,
         });
 
         const safeUser = await userModel.findById(user._id).select("-password");
-
         res.status(201).json({
             success: true,
-            message: "User registered successfully",
+            message: "Registered. Please verify your email.",
             user: safeUser,
         });
     } catch (err) {
@@ -66,67 +52,56 @@ export const registerController = async (req, res, next) => {
 };
 
 /**
- * @name loginController
- * @description login user
  * @route POST /api/auth/login
  * @access public
- * @body {username,email, password}
  */
-
 export const loginController = async (req, res, next) => {
     try {
-        const { username, email, password } = req.body;
+        const { identifier, username, email, password } = req.body;
+
+        const value = identifier || email || username;
 
         const user = await userModel
             .findOne({
-                $or: [{ username: username }, { email: email }],
+                $or: [{ username: value }, { email: value }],
             })
             .select("+password");
 
-        if (!user) {
-            return res.status(400).json({
-                success: false,
-                message: "User not found",
-                err: "User not found",
-            });
-        }
+        if (!user)
+            return res
+                .status(400)
+                .json({ success: false, message: "Invalid credentials" });
 
         const isPasswordMatch = await user.comparePassword(password);
-
-        if (!isPasswordMatch) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid email or password",
-                err: "Invalid password",
-            });
-        }
+        if (!isPasswordMatch)
+            return res
+                .status(400)
+                .json({ success: false, message: "Invalid credentials" });
 
         if (!user.verified) {
-            return res.status(400).json({
+            return res.status(403).json({
                 success: false,
-                message: "Please verify your email before login in",
-                err: "Email not verified",
+                message: "Please verify your email before logging in.",
             });
         }
 
         const token = jwt.sign(
-            {
-                id: user._id,
-                username: user.username,
-            },
+            { id: user._id, username: user.username },
             process.env.JWT_SECRET,
-            {
-                expiresIn: "7d",
-            },
+            { expiresIn: "7d" },
         );
 
-        res.cookie("token", token);
+        res.cookie("token", token, {
+            httpOnly: true,
+            sameSite: "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
 
         const safeUser = await userModel.findById(user._id).select("-password");
 
         res.status(200).json({
             success: true,
-            message: "User logged in successfully",
+            message: "Logged in successfully",
             user: safeUser,
         });
     } catch (err) {
@@ -135,144 +110,95 @@ export const loginController = async (req, res, next) => {
 };
 
 /**
- * @name getMeController
- * @description get current user
  * @route GET /api/auth/get-me
  * @access private
  */
-
-export const getMeController = async (req, res) => {
-    const userId = req.user.id;
-
-    const user = await userModel.findById(userId);
-    if (!user) {
-        return res.status(401).json({
-            success: false,
-            message: "Unauthorized",
-            err: "User not found",
-        });
+export const getMeController = async (req, res, next) => {
+    try {
+        const user = await userModel.findById(req.user.id).select("-password");
+        if (!user)
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found" });
+        res.status(200).json({ success: true, user });
+    } catch (err) {
+        next(err);
     }
-
-    res.status(200).json({
-        success: true,
-        message: "User fetched successfully",
-        user,
-    });
 };
 
 /**
- * @name verifyEmailController
- * @description verify user email
- * @route GET /api/auth/verify-email
+ * @route GET /api/auth/verify-email?token=
  * @access public
- * @query {token}
  */
 export const verifyEmailController = async (req, res) => {
     const token = req.query.token;
+    if (!token) return res.status(400).send("<h1>Token missing.</h1>");
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
         const user = await userModel.findOne({ email: decoded.email });
 
-        if (!user) {
-            return res.status(404).send("Invalid verification link");
-        }
-
-        const verifiedHtml = `
-        <html>
-        <body style="font-family:Arial;text-align:center;padding-top:100px">
-        <h1 style="color:green">Email Verified</h1>
-        <p>Your email has been successfully verified.</p>
-        <a href="http://localhost:5173/login">Go to Login</a>
-        </body>
-        </html>
-        `;
-
-        const alreadyVerifiedHtml = `
-        <html>
-        <body style="font-family:Arial;text-align:center;padding-top:100px">
-        <h1 style="color:#2563eb">Email Already Verified</h1>
-        <p>Your email is already verified.</p>
-        <a href="http://localhost:5173/login">Go to Login</a>
-        </body>
-        </html>
-        `;
+        if (!user) return res.status(404).send("<h1>Invalid link.</h1>");
 
         if (user.verified) {
-            return res.send(alreadyVerifiedHtml);
+            return res.send(`<html><body style="text-align:center;padding-top:100px">
+                <h1 style="color:#2563eb">Already Verified</h1>
+                <a href="http://localhost:5173/login">Go to Login</a>
+            </body></html>`);
         }
 
         user.verified = true;
         await user.save();
 
-        return res.send(verifiedHtml);
-    } catch (err) {
-        return res.status(400).send("Invalid or expired verification link");
+        return res.send(`<html><body style="text-align:center;padding-top:100px">
+            <h1 style="color:green">Email Verified!</h1>
+            <a href="http://localhost:5173/login">Go to Login</a>
+        </body></html>`);
+    } catch {
+        return res.status(400).send("<h1>Invalid or expired link.</h1>");
     }
 };
 
 /**
- * @name resendEmailController
- * @description resend email verification link
- * @route POST /api/auth/resend-email
+ * @route POST /api/auth/resend-verify-email
  * @access public
- * @body {email}
  */
-export const resendEmailController = async (req, res) => {
-    const { email } = req.body;
+export const resendEmailController = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        if (!email)
+            return res
+                .status(400)
+                .json({ success: false, message: "Email is required" });
 
-    if (!email) {
-        return res.status(400).json({
-            success: false,
-            message: "Email is required",
-            err: "Email is required",
+        const user = await userModel.findOne({ email });
+        if (!user)
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found" });
+        if (user.verified)
+            return res
+                .status(400)
+                .json({ success: false, message: "Email already verified" });
+
+        const token = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" },
+        );
+
+        await sendEmail({
+            to: email,
+            subject: "Verify your Nexa AI account",
+            html: `<p>Hi ${user.name},</p>
+                   <p><a href="http://localhost:3000/api/auth/verify-email?token=${token}">Verify Email</a> (expires in 7 days)</p>`,
         });
-    }
 
-    const user = await userModel.findOne({ email });
-
-    if (!user) {
-        return res.status(404).json({
-            success: false,
-            message: "User not found",
-            err: "User not found",
+        res.status(200).json({
+            success: true,
+            message: "Verification email sent.",
         });
+    } catch (err) {
+        next(err);
     }
-
-    if (user.verified) {
-        return res.status(400).json({
-            success: false,
-            message: "Email already verified",
-            err: "Email already verified",
-        });
-    }
-
-    const emailVerificationToken = jwt.sign(
-        {
-            id: user._id,
-            email: user.email,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" },
-    );
-
-    await sendEmail({
-        to: email,
-        subject: "Welcome to Nexa Ai Chatbot",
-        text: `Verify your email to start using Nexa Ai Chatbot`,
-        html: `<p>Hi ${user.name},</p>
-                    <p>Verify your email to start using <strong>Nexa Ai Chatbot</strong>
-                    <p>Please click on the link below to verify your email:
-                    <a href="http://localhost:3000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a></p>
-                    <p>Thanks,<br>Nexa Ai Chatbot</p>
-                    <P>This is an automatically generated email. Please do not reply.</P>
-                    <P>Best regards,<br>Nexa Ai Chatbot</P>
-           `,
-    });
-
-    res.status(200).json({
-        success: true,
-        message: "Email sent successfully",
-    });
 };

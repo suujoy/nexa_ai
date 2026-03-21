@@ -1,19 +1,17 @@
 import { useDispatch, useSelector } from "react-redux";
-
 import {
     setChats,
     addChat,
     setCurrentChat,
     setMessages,
     addMessage,
-    updateMessage,
-    deleteMessage,
+    deleteMessagePair,
+    replaceMessagesAfterEdit,
     updateChatTitle,
     deleteChat,
     setLoading,
     setError,
 } from "../chat.slice";
-
 import {
     createChat,
     getAllChats,
@@ -21,7 +19,6 @@ import {
     deleteChat as deleteChatAPI,
     updateChatTitle as updateChatTitleAPI,
 } from "../service/chat.api";
-
 import {
     deleteMessage as deleteMessageAPI,
     getMessages,
@@ -31,22 +28,22 @@ import {
 
 export const useChat = () => {
     const dispatch = useDispatch();
-    const { chats } = useSelector((state) => state.chat);
-    const { currentChat } = useSelector((state) => state.chat);
-    const { messages } = useSelector((state) => state.chat);
-    const { loading } = useSelector((state) => state.chat);
-    const { error } = useSelector((state) => state.chat);
+    const chats = useSelector((state) => state.chat.chats);
+    const currentChat = useSelector((state) => state.chat.currentChat);
+    const messages = useSelector((state) => state.chat.messages);
+    const loading = useSelector((state) => state.chat.loading);
+    const error = useSelector((state) => state.chat.error);
 
     const handleCreateChat = async () => {
         try {
             dispatch(setLoading(true));
-
             const newChat = await createChat();
-
             dispatch(addChat(newChat));
             dispatch(setCurrentChat(newChat));
+            dispatch(setMessages([]));
+            return newChat; // ✅ return so callers can grab the _id
         } catch (err) {
-            dispatch(setError(err.message));
+            dispatch(setError(err?.response?.data?.message || err.message));
         } finally {
             dispatch(setLoading(false));
         }
@@ -55,12 +52,10 @@ export const useChat = () => {
     const handleGetAllChats = async () => {
         try {
             dispatch(setLoading(true));
-
             const chats = await getAllChats();
-
             dispatch(setChats(chats));
         } catch (err) {
-            dispatch(setError(err.message));
+            dispatch(setError(err?.response?.data?.message || err.message));
         } finally {
             dispatch(setLoading(false));
         }
@@ -69,13 +64,11 @@ export const useChat = () => {
     const handleGetSingleChat = async (chatId) => {
         try {
             dispatch(setLoading(true));
-
             const { chat, messages } = await getSingleChat(chatId);
-
             dispatch(setCurrentChat(chat));
             dispatch(setMessages(messages));
         } catch (err) {
-            dispatch(setError(err.message));
+            dispatch(setError(err?.response?.data?.message || err.message));
         } finally {
             dispatch(setLoading(false));
         }
@@ -84,12 +77,10 @@ export const useChat = () => {
     const handleDeleteChat = async (chatId) => {
         try {
             dispatch(setLoading(true));
-
             await deleteChatAPI(chatId);
-
             dispatch(deleteChat(chatId));
         } catch (err) {
-            dispatch(setError(err.message));
+            dispatch(setError(err?.response?.data?.message || err.message));
         } finally {
             dispatch(setLoading(false));
         }
@@ -98,12 +89,10 @@ export const useChat = () => {
     const handleUpdateChatTitle = async (chatId, title) => {
         try {
             dispatch(setLoading(true));
-
             const updatedChat = await updateChatTitleAPI(chatId, title);
-
             dispatch(updateChatTitle(updatedChat));
         } catch (err) {
-            dispatch(setError(err.message));
+            dispatch(setError(err?.response?.data?.message || err.message));
         } finally {
             dispatch(setLoading(false));
         }
@@ -112,16 +101,15 @@ export const useChat = () => {
     const handleSendMessage = async (chatId, message) => {
         try {
             dispatch(setLoading(true));
-
-            const { userMessage, aiMessage } = await sendMessage(
+            const { userMessage, aiMessage, chat } = await sendMessage(
                 chatId,
                 message,
             );
-
             dispatch(addMessage(userMessage));
             dispatch(addMessage(aiMessage));
+            if (chat?.title) dispatch(updateChatTitle(chat));
         } catch (err) {
-            dispatch(setError(err.message));
+            dispatch(setError(err?.response?.data?.message || err.message));
         } finally {
             dispatch(setLoading(false));
         }
@@ -130,16 +118,13 @@ export const useChat = () => {
     const handleUpdateMessage = async (messageId, content) => {
         try {
             dispatch(setLoading(true));
-
             const { userMessage, aiMessage } = await updateMessageAPI(
                 messageId,
                 content,
             );
-
-            dispatch(updateMessage(userMessage));
-            dispatch(updateMessage(aiMessage));
+            dispatch(replaceMessagesAfterEdit({ userMessage, aiMessage }));
         } catch (err) {
-            dispatch(setError(err.message));
+            dispatch(setError(err?.response?.data?.message || err.message));
         } finally {
             dispatch(setLoading(false));
         }
@@ -148,13 +133,15 @@ export const useChat = () => {
     const handleDeleteMessage = async (messageId) => {
         try {
             dispatch(setLoading(true));
-
-            await deleteMessageAPI(messageId);
-
-            dispatch(deleteMessage(messageId)); // removes user
-            // AI message auto handled by reload OR pair logic later
+            const { deletedAiMessageId } = await deleteMessageAPI(messageId);
+            dispatch(
+                deleteMessagePair({
+                    userMessageId: messageId,
+                    aiMessageId: deletedAiMessageId,
+                }),
+            );
         } catch (err) {
-            dispatch(setError(err.message));
+            dispatch(setError(err?.response?.data?.message || err.message));
         } finally {
             dispatch(setLoading(false));
         }
@@ -163,12 +150,10 @@ export const useChat = () => {
     const handleGetMessages = async (chatId) => {
         try {
             dispatch(setLoading(true));
-
             const messages = await getMessages(chatId);
-
             dispatch(setMessages(messages));
         } catch (err) {
-            dispatch(setError(err.message));
+            dispatch(setError(err?.response?.data?.message || err.message));
         } finally {
             dispatch(setLoading(false));
         }
