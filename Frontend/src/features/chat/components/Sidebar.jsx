@@ -18,7 +18,7 @@ const Sidebar = () => {
 
     useEffect(() => {
         handleGetAllChats();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []); // eslint-disable-line
 
     const startEdit = (chat) => {
         setEditId(chat._id);
@@ -32,27 +32,28 @@ const Sidebar = () => {
     };
 
     return (
-        // h-full fills the parent flex container — no min-h-screen which breaks layout
-        <aside className="w-72 h-full flex flex-col text-slate-900 dark:text-slate-100 border-r border-emerald-300/40 dark:border-emerald-400/30 bg-white/80 dark:bg-slate-900/80 backdrop-blur flex-shrink-0">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-                <h2 className="text-lg font-bold text-emerald-600 dark:text-emerald-300">
+        <aside className="w-[240px] sm:w-64 md:w-72 h-full flex flex-col text-slate-900 dark:text-slate-100 border-r border-emerald-300/40 dark:border-emerald-400/30 bg-white/80 dark:bg-slate-900/80 backdrop-blur flex-shrink-0">
+
+            {/* HEADER */}
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700">
+                <h2 className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-300">
                     Chats
                 </h2>
                 <button
                     onClick={handleCreateChat}
                     className="p-2 rounded-lg bg-emerald-500 hover:bg-emerald-400"
                 >
-                    <FaPlus />
+                    <FaPlus size={14} />
                 </button>
             </div>
 
-            {/* Scrollable chat list */}
+            {/* LIST */}
             <div className="flex-1 overflow-y-auto">
                 {chats.map((chat) => (
                     <div
                         key={chat._id}
                         onClick={() => handleGetSingleChat(chat._id)}
-                        className={`group flex items-center justify-between p-3 cursor-pointer border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                        className={`group flex items-center justify-between gap-2 p-2 sm:p-3 cursor-pointer border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 ${
                             currentChat?._id === chat._id
                                 ? "bg-slate-200 dark:bg-slate-800"
                                 : ""
@@ -67,15 +68,16 @@ const Sidebar = () => {
                                     e.key === "Enter" && saveEdit(chat._id)
                                 }
                                 autoFocus
-                                className="bg-transparent outline-none w-full"
+                                className="bg-transparent outline-none w-full text-sm"
                             />
                         ) : (
-                            <p className="font-medium truncate">
+                            <p className="font-medium truncate text-sm sm:text-base">
                                 {chat.title || "New Chat"}
                             </p>
                         )}
 
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                        {/* ACTIONS */}
+                        <div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -83,7 +85,7 @@ const Sidebar = () => {
                                 }}
                                 className="p-1 hover:text-emerald-500"
                             >
-                                <FaEdit size={14} />
+                                <FaEdit size={12} />
                             </button>
                             <button
                                 onClick={(e) => {
@@ -92,7 +94,7 @@ const Sidebar = () => {
                                 }}
                                 className="p-1 hover:text-red-500"
                             >
-                                <FaTrash size={14} />
+                                <FaTrash size={12} />
                             </button>
                         </div>
                     </div>

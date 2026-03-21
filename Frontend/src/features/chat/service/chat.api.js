@@ -1,9 +1,12 @@
 import axios from "axios";
 
-const api = axios.create({ baseURL: "http://localhost:3000/api/chat", withCredentials: true });
+const api = axios.create({
+    baseURL: "http://localhost:3000/api/chat",
+    withCredentials: true,
+});
 
-export const createChat = async () => {
-    const { data } = await api.post("/");
+export const createChat = async (model) => {
+    const { data } = await api.post("/", { model });
     return data.chat;
 };
 

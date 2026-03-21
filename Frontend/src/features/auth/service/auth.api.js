@@ -16,9 +16,9 @@ export const register = async ({ name, username, email, password }) => {
 };
 
 // identifier can be email or username
-export const login = async ({ email, password }) => {
+export const login = async ({ identifier, password }) => {
     const { data } = await api.post("/api/auth/login", {
-        email,
+        identifier,
         password,
     });
     return data;

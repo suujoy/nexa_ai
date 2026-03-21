@@ -14,8 +14,8 @@ const ChatWindow = () => {
 
     if (!currentChat) {
         return (
-            <div className="flex h-full items-center justify-center">
-                <p className="text-sm text-slate-400 dark:text-slate-600">
+            <div className="flex h-full items-center justify-center px-4">
+                <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-600 text-center">
                     Select a chat or start typing to begin
                 </p>
             </div>
@@ -24,8 +24,8 @@ const ChatWindow = () => {
 
     if (messages.length === 0) {
         return (
-            <div className="flex h-full items-center justify-center">
-                <p className="text-sm text-slate-400 dark:text-slate-600">
+            <div className="flex h-full items-center justify-center px-4">
+                <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-600 text-center">
                     No messages yet. Say something!
                 </p>
             </div>
@@ -33,8 +33,7 @@ const ChatWindow = () => {
     }
 
     return (
-        // h-full fills the parent, overflow-y-auto enables scroll inside it
-        <div className="h-full overflow-y-auto px-4 py-6 flex flex-col gap-4">
+        <div className="h-full overflow-y-auto px-2 sm:px-4 md:px-6 py-4 sm:py-6 flex flex-col gap-3 sm:gap-4">
             {messages.map((msg) =>
                 msg.role === "user" ? (
                     <UserMessage key={msg._id} msg={msg} user={user} />
@@ -48,30 +47,32 @@ const ChatWindow = () => {
 };
 
 const UserMessage = ({ msg, user }) => (
-    <div className="flex items-end justify-end gap-2">
-        <div className="max-w-[70%] rounded-2xl rounded-br-sm bg-emerald-500 px-4 py-2.5 text-sm text-white shadow-sm">
+    <div className="flex items-end justify-end gap-1 sm:gap-2">
+        <div className="max-w-[85%] sm:max-w-[70%] rounded-2xl rounded-br-sm bg-emerald-500 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white shadow-sm">
             <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-            <p className="mt-1 text-right text-[10px] text-emerald-100/70">
+            <p className="mt-1 text-right text-[9px] sm:text-[10px] text-emerald-100/70">
                 {new Date(msg.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                 })}
             </p>
         </div>
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-pink-500 text-sm font-bold text-white shadow-sm">
+
+        <div className="flex h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full bg-pink-500 text-[10px] sm:text-sm font-bold text-white shadow-sm">
             {user?.name?.charAt(0)?.toUpperCase() || "U"}
         </div>
     </div>
 );
 
 const AiMessage = ({ msg }) => (
-    <div className="flex items-end gap-2">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-emerald-400">
-            <FaRobot size={14} />
+    <div className="flex items-end gap-1 sm:gap-2">
+        <div className="flex h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-emerald-400">
+            <FaRobot size={12} />
         </div>
-        <div className="max-w-[70%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white/80 px-4 py-2.5 text-sm text-slate-800 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100">
+
+        <div className="max-w-[85%] sm:max-w-[70%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white/80 px-3 sm:px-4 py-2 text-xs sm:text-sm text-slate-800 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100">
             <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-            <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
+            <p className="mt-1 text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500">
                 {new Date(msg.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",

@@ -1,12 +1,14 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatMistralAI } from "@langchain/mistralai";
 import { ChatGroq } from "@langchain/groq";
-// Fixed import: message classes live in @langchain/core, not "langchain"
+
 import {
     HumanMessage,
     SystemMessage,
     AIMessage,
 } from "@langchain/core/messages";
+
+// -------------------- MODELS --------------------
 
 const geminiModel = new ChatGoogleGenerativeAI({
     model: "gemini-2.0-flash",
@@ -23,35 +25,60 @@ const groqModel = new ChatGroq({
     apiKey: process.env.GROQ_API_KEY,
 });
 
-// Accepts full message history array for conversation context
+// -------------------- MODEL MAP --------------------
+
 const models = {
     gemini: geminiModel,
     mistral: mistralModel,
     groq: groqModel,
 };
 
+// -------------------- GENERATE RESPONSE --------------------
+
 export const generateResponse = async (messages, modelName = "groq") => {
-    const selectedModel = models[modelName] || groqModel;
+    const selectedModel = models[modelName] ?? groqModel;
 
     const langchainMessages = messages
         .map((msg) => {
-            if (msg.role === "user") return new HumanMessage(msg.content);
-            if (msg.role === "ai") return new AIMessage(msg.content);
+            if (msg.role === "user") {
+                return new HumanMessage(msg.content);
+            }
+
+            if (msg.role === "ai") {
+                return new AIMessage(msg.content);
+            }
+
+            if (msg.role === "system") {
+                return new SystemMessage(msg.content);
+            }
+
             return null;
         })
         .filter(Boolean);
 
-    const response = await selectedModel.invoke(langchainMessages);
-    return response.content;
+    try {
+        const response = await selectedModel.invoke(langchainMessages);
+        return response?.content || "No response from model.";
+    } catch (err) {
+        console.error("AI Error:", err.message);
+        return "Something went wrong. Please try again.";
+    }
 };
 
-// Generates a short 2-4 word title from the first message
+// -------------------- GENERATE CHAT TITLE --------------------
+
 export const generateChatTitle = async (message) => {
-    const response = await mistralModel.invoke([
-        new SystemMessage(
-            `Generate a concise 2-4 word title for a chat based on the user's first message. Return only the title, no quotes.`,
-        ),
-        new HumanMessage(`First message: ${message}`),
-    ]);
-    return response.content.trim();
+    try {
+        const response = await mistralModel.invoke([
+            new SystemMessage(
+                "Generate a concise 2-4 word title for a chat based on the user's first message. Return only the title, no quotes.",
+            ),
+            new HumanMessage(`First message: ${message}`),
+        ]);
+
+        return response?.content?.trim() || "New Chat";
+    } catch (err) {
+        console.error("Title Error:", err.message);
+        return "New Chat";
+    }
 };

@@ -1,24 +1,31 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { useAuth } from "../hooks/useAuth";
+import { useSelector } from "react-redux";
 import ThemeToggle from "../../theme/ThemeToggle";
 
 const Register = () => {
+    const navigate = useNavigate();
     const [name, setName] = useState("");
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [success, setSuccess] = useState(false);
 
-    const handleSubmit = (event) => {
+    const { handleRegister } = useAuth();
+    const { loading, error } = useSelector((state) => state.auth);
+
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
-        const payload = {
-            name,
-            username,
-            email,
-            password,
-        };
+        const payload = { name, username, email, password };
 
-        console.log("Register form submitted:", payload);
+        try {
+            await handleRegister(payload);
+            setSuccess(true);
+        } catch {
+            // error is stored in Redux via setError
+        }
     };
 
     return (
@@ -118,10 +125,22 @@ const Register = () => {
 
                         <button
                             type="submit"
-                            className="w-full rounded-lg bg-pink-500 px-4 py-3 font-semibold text-slate-950 transition hover:bg-pink-400"
+                            disabled={loading}
+                            className="w-full rounded-lg bg-pink-500 px-4 py-3 font-semibold text-slate-950 transition hover:bg-pink-400 disabled:opacity-60"
                         >
-                            Register
+                            {loading ? "Registering..." : "Register"}
                         </button>
+
+                        {error && (
+                            <p className="text-center text-sm text-red-500">{error}</p>
+                        )}
+
+                        {success && (
+                            <p className="text-center text-sm text-emerald-500">
+                                ✅ Registered! Check your email to verify your account, then{" "}
+                                <Link to="/login" className="underline">login</Link>.
+                            </p>
+                        )}
                     </form>
 
                     <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">

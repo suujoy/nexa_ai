@@ -8,25 +8,28 @@ import ThemeToggle from "../../theme/ThemeToggle";
 const Login = () => {
     const navigate = useNavigate();
 
-    const [email, setEmail] = useState("");
+    const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
 
     const { user } = useSelector((state) => state.auth);
-    const { loading } = useSelector((state) => state.auth);
+    const { loading, error } = useSelector((state) => state.auth);
 
     const { handleLogin } = useAuth();
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
         const payload = {
-            email,
+            identifier,
             password,
         };
 
-        handleLogin(payload);
-        console.log("Login form submitted:", payload);
-        navigate("/");
+        try {
+            await handleLogin(payload);
+            navigate("/");
+        } catch {
+            // error is already stored in Redux via setError — no need to navigate
+        }
     };
 
     if (!loading && user) {
@@ -53,20 +56,20 @@ const Login = () => {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
                             <label
-                                htmlFor="email"
+                                htmlFor="identifier"
                                 className="mb-2 block text-sm font-medium text-pink-500 dark:text-pink-300"
                             >
-                                Email
+                                Email or Username
                             </label>
                             <input
-                                id="email"
-                                type="email"
-                                value={email}
+                                id="identifier"
+                                type="text"
+                                value={identifier}
                                 onChange={(event) =>
-                                    setEmail(event.target.value)
+                                    setIdentifier(event.target.value)
                                 }
                                 required
-                                placeholder="you@example.com"
+                                placeholder="you@example.com or username"
                                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30 dark:border-slate-700 dark:bg-slate-950/80 dark:text-slate-100"
                             />
                         </div>
@@ -93,10 +96,15 @@ const Login = () => {
 
                         <button
                             type="submit"
-                            className="w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400"
+                            disabled={loading}
+                            className="w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-60"
                         >
-                            Login
+                            {loading ? "Signing in..." : "Login"}
                         </button>
+
+                        {error && (
+                            <p className="text-center text-sm text-red-500">{error}</p>
+                        )}
                     </form>
 
                     <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">

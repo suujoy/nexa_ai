@@ -34,10 +34,12 @@ export const useChat = () => {
     const loading = useSelector((state) => state.chat.loading);
     const error = useSelector((state) => state.chat.error);
 
+    const selectedModel = useSelector((state) => state.model.selectedModel);
+
     const handleCreateChat = async () => {
         try {
             dispatch(setLoading(true));
-            const newChat = await createChat();
+            const newChat = await createChat(selectedModel);
             dispatch(addChat(newChat));
             dispatch(setCurrentChat(newChat));
             dispatch(setMessages([]));
