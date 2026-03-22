@@ -1,26 +1,38 @@
 import { Router } from "express";
-import { loginValidator, registerValidator } from "../validation/auth.validate.js";
 import {
-    getMeController, loginController, registerController,
-    resendEmailController, verifyEmailController,
-} from "../controllers/auth.controller.js";
+    getMe,
+    login,
+    logout,
+    register,
+    verifyEmail,
+} from "../controllers/auth.controllers.js";
 import { identifyUser } from "../middlewares/auth.middleware.js";
 
 const authRouter = Router();
 
-// POST /api/auth/register
-authRouter.post("/register", registerValidator, registerController);
+/**
+ * Register
+ */
+authRouter.post("/register", register);
 
-// POST /api/auth/login
-authRouter.post("/login", loginValidator, loginController);
+/**
+ * Verify email
+ */
+authRouter.get("/verify-email", verifyEmail);
 
-// GET /api/auth/get-me (private)
-authRouter.get("/get-me", identifyUser, getMeController);
+/**
+ * Login
+ */
+authRouter.post("/login", login);
 
-// GET /api/auth/verify-email?token=
-authRouter.get("/verify-email", verifyEmailController);
+/**
+ * Get me
+ */
+authRouter.get("/get-me", identifyUser, getMe);
 
-// POST /api/auth/resend-verify-email
-authRouter.post("/resend-verify-email", resendEmailController);
+/**
+ * Logout
+ */
+authRouter.post("/logout", identifyUser, logout);
 
 export default authRouter;

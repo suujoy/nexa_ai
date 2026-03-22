@@ -3,27 +3,75 @@ import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
     {
-        name: { type: String, required: true, trim: true },
-        username: { type: String, required: true, unique: true, trim: true, lowercase: true },
-        email: { type: String, required: true, unique: true, trim: true, lowercase: true },
-        password: { type: String, required: true, select: false },
-        verified: { type: Boolean, default: false },
-        isAdmin: { type: Boolean, default: false },
-        profileImage: {
+        name: {
             type: String,
-            default: "https://ik.imagekit.io/teim9v6vi/default%20profile%20image.webp?updatedAt=1771729885407",
+            required: true,
+            trim: true,
+        },
+        username: {
+            type: String,
+            required: true,
+            unique: true,
+            lowercase: true,
+        },
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            lowercase: true,
+        },
+
+        password: {
+            type: String,
+            required: true,
+            select: false,
+        },
+
+        isVerified: {
+            type: Boolean,
+            default: false,
+        },
+
+        isAdmin: {
+            type: Boolean,
+            default: false,
+        },
+
+        tokenCredits: {
+            type: Number,
+            default: 0,
+        },
+
+        tokenDailyLimit: {
+            type: Number,
+            default: 10,
+        },
+
+        defaultAiModel: {
+            type: String,
+            default: "groq",
+        },
+
+        theme: {
+            type: String,
+            enum: ["light", "dark"],
+            default: "light",
         },
     },
     { timestamps: true },
 );
 
 userSchema.pre("save", async function () {
-    if (!this.isModified("password")) return;
+    if (!this.isModified("password")) return ;
+
     this.password = await bcrypt.hash(this.password, 10);
+    
 });
 
-userSchema.methods.comparePassword = async function (enteredPassword) {
-    return bcrypt.compare(enteredPassword, this.password);
+userSchema.methods.comparePassword = async function (password) {
+    return await bcrypt.compare(password, this.password);
 };
 
-export default mongoose.model("User", userSchema);
+const userModel = mongoose.model("User", userSchema);
+
+export default userModel;
