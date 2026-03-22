@@ -37,7 +37,7 @@ export const registerController = async (req, res, next) => {
             subject: "Verify your Nexa AI account",
             html: `<p>Hi ${user.name},</p>
                    <p>Click to verify your email:
-                   <a href="http://localhost:3000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a></p>`,
+                   <a href="https://nexa-ai-v1j9.onrender.com/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a></p>`,
         });
 
         const safeUser = await userModel.findById(user._id).select("-password");
@@ -143,7 +143,7 @@ export const verifyEmailController = async (req, res) => {
         if (user.verified) {
             return res.send(`<html><body style="text-align:center;padding-top:100px">
                 <h1 style="color:#2563eb">Already Verified</h1>
-                <a href="http://localhost:5173/login">Go to Login</a>
+                <a href="https://nexa-ai-v1j9.onrender.com/login">Go to Login</a>
             </body></html>`);
         }
 
@@ -152,7 +152,7 @@ export const verifyEmailController = async (req, res) => {
 
         return res.send(`<html><body style="text-align:center;padding-top:100px">
             <h1 style="color:green">Email Verified!</h1>
-            <a href="http://localhost:5173/login">Go to Login</a>
+            <a href="https://nexa-ai-v1j9.onrender.com/login">Go to Login</a>
         </body></html>`);
     } catch {
         return res.status(400).send("<h1>Invalid or expired link.</h1>");
@@ -191,7 +191,7 @@ export const resendEmailController = async (req, res, next) => {
             to: email,
             subject: "Verify your Nexa AI account",
             html: `<p>Hi ${user.name},</p>
-                   <p><a href="http://localhost:3000/api/auth/verify-email?token=${token}">Verify Email</a> (expires in 7 days)</p>`,
+                   <p><a href="https://nexa-ai-v1j9.onrender.com/api/auth/verify-email?token=${token}">Verify Email</a> (expires in 7 days)</p>`,
         });
 
         res.status(200).json({
