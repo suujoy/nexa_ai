@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 
 const guestSchema = new mongoose.Schema(
     {
+        name: {
+            type: String,
+            required: true,
+        },
         chatId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Chat",

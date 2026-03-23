@@ -2,6 +2,11 @@ import chatModel from "../models/chat.model.js";
 import messageModel from "../models/message.model.js";
 import aiModel from "../models/aiModel.model.js";
 import { generateChatTitle, generateResponse } from "../services/ai.service.js";
+import {
+    emitNewMessage,
+    emitChatTitleUpdate,
+    emitAiThinking,
+} from "../socket/socket.server.js";
 
 export const sendMessage = async (req, res, next) => {
     try {
@@ -21,7 +26,6 @@ export const sendMessage = async (req, res, next) => {
 
         /* ----------- CREATE CHAT IF NOT EXISTS ----------- */
         if (!chatId) {
-            // FIX #1: Fetch default model before creating chat
             const defaultModel = await aiModel.findOne({
                 isDefault: true,
                 isActive: true,
@@ -37,7 +41,7 @@ export const sendMessage = async (req, res, next) => {
             chat = await chatModel.create({
                 userId,
                 title: "New Chat",
-                model: defaultModel._id, // FIX #1: Pass model on creation
+                model: defaultModel._id,
             });
 
             chatId = chat._id;
@@ -55,7 +59,7 @@ export const sendMessage = async (req, res, next) => {
         const modelId = chat.model;
 
         /* ----------- SAVE USER MESSAGE ----------- */
-        await messageModel.create({
+        const userMessage = await messageModel.create({
             chatId,
             userId,
             role: "user",
@@ -64,13 +68,18 @@ export const sendMessage = async (req, res, next) => {
             status: "success",
         });
 
+        /* ----------- NOTIFY ROOM: USER MESSAGE ----------- */
+        emitNewMessage(chatId, userMessage);
+
+        /* ----------- NOTIFY ROOM: AI IS THINKING ----------- */
+        emitAiThinking(chatId, true);
+
         /* ----------- GET ALL MESSAGES ----------- */
         const messages = await messageModel
             .find({ chatId })
             .sort({ createdAt: 1 });
 
         /* ----------- GENERATE AI RESPONSE + TITLE IN PARALLEL ----------- */
-        // FIX #5: Run both LLM calls concurrently to save latency on new chats
         let aiText;
         let title = chat.title;
 
@@ -84,13 +93,15 @@ export const sendMessage = async (req, res, next) => {
             title = generatedTitle;
 
             await chatModel.findByIdAndUpdate(chatId, { title });
+
+            /* ----------- NOTIFY ROOM: TITLE UPDATED ----------- */
+            emitChatTitleUpdate(chatId, title);
         } else {
             aiText = await generateResponse(messages, modelId);
         }
 
         /* ----------- SAVE AI MESSAGE ----------- */
-        // FIX #2: Include userId on AI messages for consistency
-        await messageModel.create({
+        const aiMessage = await messageModel.create({
             chatId,
             userId,
             role: "ai",
@@ -99,7 +110,11 @@ export const sendMessage = async (req, res, next) => {
             status: "success",
         });
 
-        /* ----------- RESPONSE ----------- */
+        /* ----------- NOTIFY ROOM: AI RESPONSE + STOP THINKING ----------- */
+        emitAiThinking(chatId, false);
+        emitNewMessage(chatId, aiMessage);
+
+        /* ----------- HTTP RESPONSE ----------- */
         return res.status(200).json({
             success: true,
             chatId,
@@ -134,7 +149,7 @@ export const getMessages = async (req, res, next) => {
         const [messages, totalMessages] = await Promise.all([
             messageModel
                 .find({ chatId })
-                .sort({ createdAt: -1 }) // latest first
+                .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
             messageModel.countDocuments({ chatId }),
@@ -154,7 +169,7 @@ export const getMessages = async (req, res, next) => {
                 hasNextPage: page < totalPages,
                 hasPrevPage: page > 1,
             },
-            messages: messages.reverse(), // reverse back to oldest first for chat UI
+            messages: messages.reverse(),
         });
     } catch (err) {
         next(err);
@@ -217,6 +232,9 @@ export const updateMessage = async (req, res, next) => {
         const chat = await chatModel.findById(chatId);
         const modelId = chat.model;
 
+        /* ----------- NOTIFY ROOM: AI IS THINKING ----------- */
+        emitAiThinking(chatId, true);
+
         /* ----------- GENERATE NEW AI RESPONSE ----------- */
         const aiText = await generateResponse(formattedMessages, modelId);
 
@@ -231,6 +249,10 @@ export const updateMessage = async (req, res, next) => {
             parentMessageId: message._id,
         });
 
+        /* ----------- NOTIFY ROOM: AI RESPONSE + STOP THINKING ----------- */
+        emitAiThinking(chatId, false);
+        emitNewMessage(chatId, aiMessage);
+
         /* ----------- RESPONSE ----------- */
         return res.status(200).json({
             success: true,
@@ -244,6 +266,7 @@ export const updateMessage = async (req, res, next) => {
         next(err);
     }
 };
+
 export const deleteMessage = async (req, res, next) => {
     try {
         const { messageId } = req.params;
@@ -267,14 +290,8 @@ export const deleteMessage = async (req, res, next) => {
             });
         }
 
-        /* ----------- DELETE LOGIC ----------- */
-        // Option 1: delete only this message
         await messageModel.findByIdAndDelete(messageId);
 
-        // Option 2 (advanced): delete child messages also (threading)
-        // await messageModel.deleteMany({ parentMessageId: messageId });
-
-        /* ----------- RESPONSE ----------- */
         return res.status(200).json({
             success: true,
             message: "Message deleted successfully",
@@ -302,10 +319,6 @@ export const deleteChatMessages = async (req, res, next) => {
         /* ----------- DELETE ALL MESSAGES ----------- */
         const result = await messageModel.deleteMany({ chatId });
 
-        /* ----------- OPTIONAL: DELETE CHAT ALSO ----------- */
-        // await chatModel.findByIdAndDelete(chatId);
-
-        /* ----------- RESPONSE ----------- */
         return res.status(200).json({
             success: true,
             message: "All messages deleted successfully",
@@ -334,7 +347,6 @@ export const streamMessage = async (req, res, next) => {
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
-
         res.flushHeaders();
 
         /* ----------- GET MESSAGES ----------- */
@@ -357,14 +369,12 @@ export const streamMessage = async (req, res, next) => {
 
         for await (const chunk of stream) {
             const token = chunk?.content || "";
-
             fullText += token;
-
             res.write(`data: ${JSON.stringify({ token })}\n\n`);
         }
 
         /* ----------- SAVE FINAL AI MESSAGE ----------- */
-        await messageModel.create({
+        const aiMessage = await messageModel.create({
             chatId,
             userId,
             role: "ai",
@@ -372,6 +382,9 @@ export const streamMessage = async (req, res, next) => {
             model: chat.model,
             status: "success",
         });
+
+        /* ----------- NOTIFY ROOM VIA SOCKET ----------- */
+        emitNewMessage(chatId, aiMessage);
 
         /* ----------- END STREAM ----------- */
         res.write(`data: [DONE]\n\n`);

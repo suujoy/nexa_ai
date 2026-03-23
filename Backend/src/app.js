@@ -6,6 +6,8 @@ import authRouter from "./routes/auth.route.js";
 import chatRouter from "./routes/chat.route.js";
 import aiModelRouter from "./routes/aiModel.route.js";
 import messageRouter from "./routes/message.route.js";
+import attachmentRouter from "./routes/attachment.route.js";
+import guestRouter from "./routes/guest.route.js";
 
 const app = express();
 
@@ -28,6 +30,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/chats", chatRouter);
 app.use("/api/aiModel", aiModelRouter);
 app.use("/api/message", messageRouter);
+app.use("/api/attachment", attachmentRouter);
+app.use("/api/guest", guestRouter);
 
 //Error Handler
 app.use(handleError);
