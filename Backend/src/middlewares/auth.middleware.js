@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import redis from "../configs/cache.js";
 import userModel from "../models/user.model.js";
 
@@ -29,7 +30,7 @@ export const identifyUser = async (req, res, next) => {
             });
         }
 
-        req.user = user; // ✅ full user with isAdmin
+        req.user = user;
         next();
     } catch (err) {
         return res.status(401).json({

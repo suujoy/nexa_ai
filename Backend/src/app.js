@@ -5,6 +5,7 @@ import handleError from "./middlewares/error.middleware.js";
 import authRouter from "./routes/auth.route.js";
 import chatRouter from "./routes/chat.route.js";
 import aiModelRouter from "./routes/aiModel.route.js";
+import messageRouter from "./routes/message.route.js";
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRouter);
 app.use("/api/chats", chatRouter);
 app.use("/api/aiModel", aiModelRouter);
+app.use("/api/message", messageRouter);
 
 //Error Handler
 app.use(handleError);

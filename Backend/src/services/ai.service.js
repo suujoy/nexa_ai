@@ -59,35 +59,28 @@ const getLLM = (modelData) => {
 
 /* -------------------- GENERATE RESPONSE -------------------- */
 export const generateResponse = async (messages, modelId) => {
-    try {
-        if (!messages || messages.length === 0) return "";
+    if (!messages || messages.length === 0) return "";
 
-        const modelData = await getModelData(modelId);
-        const llm = getLLM(modelData);
+    const modelData = await getModelData(modelId);
+    const llm = getLLM(modelData);
 
-        const langchainMessages = messages
-            .map((msg) => {
-                if (msg.role === "user") return new HumanMessage(msg.content);
-                if (msg.role === "ai") return new AIMessage(msg.content);
-                if (msg.role === "system")
-                    return new SystemMessage(msg.content);
-                return null;
-            })
-            .filter(Boolean);
+    const langchainMessages = messages
+        .map((msg) => {
+            if (msg.role === "user") return new HumanMessage(msg.content);
+            if (msg.role === "ai") return new AIMessage(msg.content);
+            if (msg.role === "system") return new SystemMessage(msg.content);
+            return null;
+        })
+        .filter(Boolean);
 
-        const response = await llm.invoke(langchainMessages);
+    const response = await llm.invoke(langchainMessages);
 
-        return response?.content || "";
-    } catch (err) {
-        console.error("AI Response Error:", err.message);
-        return "Something went wrong with AI response";
-    }
+    return response?.content || "";
 };
 
 /* -------------------- GENERATE CHAT TITLE -------------------- */
 export const generateChatTitle = async (message) => {
     try {
-        // You can later make this dynamic if needed
         const modelData = await aiModel.findOne({ isDefault: true });
 
         if (!modelData) throw new Error("No default model found");
@@ -96,7 +89,7 @@ export const generateChatTitle = async (message) => {
 
         const response = await llm.invoke([
             new SystemMessage(
-                "Generate a clear 2-4 word chat title. Return only title."
+                "Generate a clear 2-4 word chat title. Return only title.",
             ),
             new HumanMessage(`First message: ${message}`),
         ]);
