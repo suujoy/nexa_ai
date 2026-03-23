@@ -3,6 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import handleError from "./middlewares/error.middleware.js";
 import authRouter from "./routes/auth.route.js";
+import chatRouter from "./routes/chat.route.js";
+import aiModelRouter from "./routes/aiModel.route.js";
 
 const app = express();
 
@@ -22,6 +24,8 @@ app.use(cookieParser());
  * Routes
  */
 app.use("/api/auth", authRouter);
+app.use("/api/chats", chatRouter);
+app.use("/api/aiModel", aiModelRouter);
 
 //Error Handler
 app.use(handleError);

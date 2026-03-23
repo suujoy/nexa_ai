@@ -13,7 +13,7 @@ const aiModelSchema = new mongoose.Schema(
             required: true, // example: google, openai
         },
 
-        apiName: {
+        model: {
             type: String,
             required: true, // example: gemini-1.5-flash
         },

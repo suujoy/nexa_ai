@@ -15,8 +15,9 @@ const chatSchema = new mongoose.Schema(
         },
 
         model: {
-            type: String,
-            default: "groq",
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "AiModel",
+            required: true,
         },
 
         isPinned: {
@@ -33,7 +34,6 @@ const chatSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
-        
     },
     { timestamps: true },
 );

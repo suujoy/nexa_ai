@@ -1,3 +1,4 @@
+import redis from "../configs/cache.js";
 import userModel from "../models/user.model.js";
 import { sendEmail } from "../services/mail.service.js";
 import jwt from "jsonwebtoken";
@@ -232,7 +233,7 @@ export const logout = async (req, res) => {
 };
 
 export const getMe = async (req, res) => {
-    const user = await userModel.findById(req.user.id);
+    const user = await userModel.findById(req.user._id);
 
     if (!user) {
         return res.status(404).json({
@@ -244,4 +245,100 @@ export const getMe = async (req, res) => {
         message: "User Fetched Successfully",
         user,
     });
+};
+
+export const forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        const user = await userModel.findOne({ email });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "User not found",
+                error: "User not found",
+            });
+        }
+
+        const token = jwt.sign(
+            {
+                _id: user._id,
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "15m",
+            },
+        );
+
+        const BASE_URL = process.env.CLIENT_URL || "http://localhost:5173";
+
+        const html = `
+                    <div style="font-family:Arial;padding:20px;">
+                        <h2>Nexa AI</h2>
+                        <p>Click below to reset your password</p>
+                        <a href="${BASE_URL}/reset-password?token=${token}"
+                            style="padding:10px 15px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:6px;">
+                            Reset Password
+                        </a>
+                    </div>
+                            `;
+        await sendEmail({
+            to: email,
+            subject: "Reset Password",
+            text: "Reset Password",
+            html,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Email sent successfully",
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const resetPassword = async (req, res, next) => {
+    try {
+        const { token } = req.query;
+        const { password } = req.body;
+
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: "Token not found",
+                error: "Token not found",
+            });
+        }
+
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: "Password not found",
+                error: "Password not found",
+            });
+        }
+
+        const decode = jwt.verify(token, process.env.JWT_SECRET);
+
+        const user = await userModel.findById(decode._id);
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "User not found",
+                error: "User not found",
+            });
+        }
+
+        user.password = password;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Password reset successfully",
+        });
+    } catch (err) {
+        next(err);
+    }
 };

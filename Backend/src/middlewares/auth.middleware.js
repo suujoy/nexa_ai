@@ -1,5 +1,5 @@
-import jwt from "jsonwebtoken";
-import redis from '../configs/cache.js'
+import redis from "../configs/cache.js";
+import userModel from "../models/user.model.js";
 
 export const identifyUser = async (req, res, next) => {
     const token = req.cookies.token;
@@ -20,11 +20,20 @@ export const identifyUser = async (req, res, next) => {
 
     try {
         const decode = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decode;
+
+        const user = await userModel.findById(decode._id);
+
+        if (!user) {
+            return res.status(401).json({
+                message: "User not found",
+            });
+        }
+
+        req.user = user; // ✅ full user with isAdmin
         next();
     } catch (err) {
         return res.status(401).json({
-            message: "Invalid or Unauthorize token",
+            message: "Invalid or Unauthorized token",
         });
     }
 };
