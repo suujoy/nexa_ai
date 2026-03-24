@@ -1,3 +1,5 @@
+import ReactMarkdown from "react-markdown";
+
 const StreamMessageView = ({ text = "", thinking = false }) => {
     if (!text && !thinking) return null;
 
@@ -14,12 +16,12 @@ const StreamMessageView = ({ text = "", thinking = false }) => {
                         <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-500/80 [animation-delay:300ms]" />
                     </div>
                 ) : (
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-7">
-                        {text}
+                    <div className="prose prose-sm dark:prose-invert mt-2 max-w-none leading-7">
+                        <ReactMarkdown>{text}</ReactMarkdown>
                         {thinking ? (
                             <span className="ml-1 inline-block h-4 w-[2px] animate-pulse bg-cyan-500/90 align-middle" />
                         ) : null}
-                    </p>
+                    </div>
                 )}
             </div>
         </div>

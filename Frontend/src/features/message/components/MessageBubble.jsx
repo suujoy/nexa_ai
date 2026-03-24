@@ -1,3 +1,5 @@
+import ReactMarkdown from "react-markdown";
+
 const MessageBubble = ({ message }) => {
     const isUser = message.role === "user";
 
@@ -10,12 +12,15 @@ const MessageBubble = ({ message }) => {
                         : "border border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-white"
                 }`}
             >
-                {/* <p className="text-[11px] font-semibold uppercase tracking-[0.18em] opacity-75">
-                    {message.role}
-                </p> */}
-                <p className=" whitespace-pre-wrap text-sm leading-7">
-                    {message.content}
-                </p>
+                {isUser ? (
+                    <p className="whitespace-pre-wrap text-sm leading-7">
+                        {message.content}
+                    </p>
+                ) : (
+                    <div className="prose prose-sm dark:prose-invert max-w-none leading-7">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
+                )}
             </div>
         </div>
     );
