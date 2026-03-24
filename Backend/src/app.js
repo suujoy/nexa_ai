@@ -33,7 +33,7 @@ app.use(
     }),
 );
 
-app.options("*", cors());
+app.options("*name", cors());
 app.use(cookieParser());
 
 /**
