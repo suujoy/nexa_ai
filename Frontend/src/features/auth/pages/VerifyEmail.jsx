@@ -1,23 +1,26 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router";
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import useAuth from "../hooks/useAuth";
 
 const VerifyEmail = () => {
     const [params] = useSearchParams();
+    const { verifyEmail } = useAuth();
 
     useEffect(() => {
         const token = params.get("token");
 
-        fetch(`${BASE_URL}/api/auth/verify-email?token=${token}`)
-            .then((res) => res.text())
+        if (!token) return;
+
+        verifyEmail(token)
             .then((html) => {
                 document.open();
                 document.write(html);
                 document.close();
-            });
-    }, []);
+            })
+            .catch(() => {});
+    }, [params]);
 
-    return <p>Verifying...</p>;
+    return <p className="p-6 text-sm">Verifying...</p>;
 };
 
 export default VerifyEmail;

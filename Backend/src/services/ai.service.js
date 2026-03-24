@@ -19,7 +19,11 @@ const getModelData = async (modelId) => {
     }
 
     if (!modelData) {
-        modelData = await aiModel.findOne({ isDefault: true });
+        modelData = await aiModel.findOne({ isDefault: true, isActive: true });
+    }
+
+    if (!modelData) {
+        modelData = await aiModel.findOne({ isActive: true });
     }
 
     if (!modelData || !modelData.isActive) {
@@ -78,12 +82,32 @@ export const generateResponse = async (messages, modelId) => {
     return response?.content || "";
 };
 
+export const generateResponseStream = async (messages, modelId) => {
+    if (!messages || messages.length === 0) return [];
+
+    const modelData = await getModelData(modelId);
+    const llm = getLLM(modelData);
+
+    const langchainMessages = messages
+        .map((msg) => {
+            if (msg.role === "user") return new HumanMessage(msg.content);
+            if (msg.role === "ai") return new AIMessage(msg.content);
+            if (msg.role === "system") return new SystemMessage(msg.content);
+            return null;
+        })
+        .filter(Boolean);
+
+    return llm.stream(langchainMessages);
+};
+
 /* -------------------- GENERATE CHAT TITLE -------------------- */
 export const generateChatTitle = async (message) => {
     try {
-        const modelData = await aiModel.findOne({ isDefault: true });
+        const modelData =
+            (await aiModel.findOne({ isDefault: true, isActive: true })) ||
+            (await aiModel.findOne({ isActive: true }));
 
-        if (!modelData) throw new Error("No default model found");
+        if (!modelData) throw new Error("No active model found");
 
         const llm = getLLM(modelData);
 

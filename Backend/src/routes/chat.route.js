@@ -3,6 +3,7 @@ import { identifyUser } from "../middlewares/auth.middleware.js";
 import {
     changeAiModel,
     createChat,
+    deleteChat,
     getArchivedChat,
     getChatDetail,
     getChats,
@@ -54,6 +55,7 @@ chatRouter.get("/pinned", identifyUser, getPinnedChat);
 chatRouter.get("/archived", identifyUser, getArchivedChat);
 
 chatRouter.patch("/model/:chatId", identifyUser, changeAiModel);
+chatRouter.delete("/delete/:chatId", identifyUser, deleteChat);
 
 
 export default chatRouter;

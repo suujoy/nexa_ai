@@ -16,7 +16,7 @@ const chatSchema = new mongoose.Schema(
 
         model: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "AiModel",
+            ref: "AIModel",
             required: true,
         },
 

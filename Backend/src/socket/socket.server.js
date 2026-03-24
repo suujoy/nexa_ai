@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import cookie from "cookie";
+import chatModel from "../models/chat.model.js";
 
 let io;
 
@@ -40,8 +41,21 @@ export const initSocket = (httpServer) => {
          * Join a chat room
          * Client emits: { chatId }
          */
-        socket.on("join_chat", ({ chatId }) => {
+        socket.on("join_chat", async ({ chatId }) => {
             if (!chatId) return;
+
+            const chat = await chatModel.findOne({
+                _id: chatId,
+                userId: socket.userId,
+            });
+
+            if (!chat) {
+                socket.emit("chat_error", {
+                    message: "Unauthorized chat access",
+                });
+                return;
+            }
+
             socket.join(chatId);
             console.log(`User ${socket.userId} joined chat: ${chatId}`);
         });

@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *));
+
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(56, 189, 248, 0.55) rgba(15, 23, 42, 0.25);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: linear-gradient(
+        180deg,
+        rgba(15, 23, 42, 0.22),
+        rgba(15, 23, 42, 0.12)
+    );
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+        180deg,
+        rgba(14, 165, 233, 0.7),
+        rgba(37, 99, 235, 0.75)
+    );
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+        180deg,
+        rgba(34, 211, 238, 0.82),
+        rgba(37, 99, 235, 0.9)
+    );
+    background-clip: padding-box;
+}

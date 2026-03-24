@@ -3,6 +3,14 @@ import userModel from "../models/user.model.js";
 import { sendEmail } from "../services/mail.service.js";
 import jwt from "jsonwebtoken";
 
+const isProduction = process.env.NODE_ENV === "production";
+const cookieOptions = {
+    httpOnly: true,
+    sameSite: isProduction ? "none" : "lax",
+    secure: isProduction,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 /**
  * Register a new user
  */
@@ -205,7 +213,7 @@ export const login = async (req, res, next) => {
             },
         );
 
-        res.cookie("token", token);
+        res.cookie("token", token, cookieOptions);
 
         const safeUser = user.toObject();
         delete safeUser.password;
@@ -223,9 +231,11 @@ export const login = async (req, res, next) => {
 export const logout = async (req, res) => {
     const token = req.cookies.token;
 
-    res.clearCookie("token");
+    res.clearCookie("token", cookieOptions);
 
-    await redis.set(token, Date.now().toString());
+    if (token) {
+        await redis.set(token, Date.now().toString());
+    }
 
     res.status(200).json({
         message: "User Logged out successfully",

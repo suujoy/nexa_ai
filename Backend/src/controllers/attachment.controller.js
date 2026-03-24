@@ -1,4 +1,6 @@
 import attachmentModel from "../models/attachment.model.js";
+import chatModel from "../models/chat.model.js";
+import messageModel from "../models/message.model.js";
 import { uploadFile } from "../services/imagekit.service.js";
 
 export const uploadAttachment = async (req, res) => {
@@ -11,6 +13,33 @@ export const uploadAttachment = async (req, res) => {
                 success: false,
                 message: "File and chatId are required",
             });
+        }
+
+        const chat = await chatModel.findOne({
+            _id: chatId,
+            userId: req.user._id,
+        });
+
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found",
+            });
+        }
+
+        if (messageId) {
+            const message = await messageModel.findOne({
+                _id: messageId,
+                chatId,
+                userId: req.user._id,
+            });
+
+            if (!message) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Message not found",
+                });
+            }
         }
 
         const uploadedData = await uploadFile(file);
@@ -49,8 +78,20 @@ export const getAttachmentsByMessage = async (req, res) => {
             });
         }
 
+        const message = await messageModel.findOne({
+            _id: messageId,
+            userId: req.user._id,
+        });
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: "Message not found",
+            });
+        }
+
         const attachments = await attachmentModel
-            .find({ messageId })
+            .find({ messageId, userId: req.user._id })
             .sort({ createdAt: -1 });
 
         return res.status(200).json({
@@ -77,7 +118,19 @@ export const getAttachmentsByChat = async (req, res) => {
             });
         }
 
-        const filter = { chatId };
+        const chat = await chatModel.findOne({
+            _id: chatId,
+            userId: req.user._id,
+        });
+
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found",
+            });
+        }
+
+        const filter = { chatId, userId: req.user._id };
         if (role) filter.role = role;
 
         const attachments = await attachmentModel
@@ -107,7 +160,10 @@ export const deleteAttachment = async (req, res) => {
             });
         }
 
-        const attachment = await attachmentModel.findById(attachmentId);
+        const attachment = await attachmentModel.findOne({
+            _id: attachmentId,
+            userId: req.user._id,
+        });
 
         if (!attachment) {
             return res.status(404).json({
@@ -115,15 +171,6 @@ export const deleteAttachment = async (req, res) => {
                 message: "Attachment not found",
             });
         }
-
-        // optional ownership check
-        if (attachment.userId.toString() !== req.user._id.toString()) {
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized",
-            });
-        }
-
         await attachmentModel.findByIdAndDelete(attachmentId);
 
         return res.status(200).json({
@@ -149,7 +196,22 @@ export const deleteAttachmentsByChat = async (req, res) => {
             });
         }
 
-        const attachments = await attachmentModel.find({ chatId });
+        const chat = await chatModel.findOne({
+            _id: chatId,
+            userId: req.user._id,
+        });
+
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found",
+            });
+        }
+
+        const attachments = await attachmentModel.find({
+            chatId,
+            userId: req.user._id,
+        });
 
         if (!attachments.length) {
             return res.status(200).json({
@@ -158,7 +220,10 @@ export const deleteAttachmentsByChat = async (req, res) => {
             });
         }
 
-        const result = await attachmentModel.deleteMany({ chatId });
+        const result = await attachmentModel.deleteMany({
+            chatId,
+            userId: req.user._id,
+        });
 
         return res.status(200).json({
             success: true,
@@ -184,7 +249,10 @@ export const downloadAttachment = async (req, res) => {
             });
         }
 
-        const attachment = await attachmentModel.findById(attachmentId);
+        const attachment = await attachmentModel.findOne({
+            _id: attachmentId,
+            userId: req.user._id,
+        });
 
         if (!attachment) {
             return res.status(404).json({

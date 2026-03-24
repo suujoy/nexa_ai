@@ -1,7 +1,11 @@
 import chatModel from "../models/chat.model.js";
 import messageModel from "../models/message.model.js";
 import aiModel from "../models/aiModel.model.js";
-import { generateChatTitle, generateResponse } from "../services/ai.service.js";
+import {
+    generateChatTitle,
+    generateResponse,
+    generateResponseStream,
+} from "../services/ai.service.js";
 import {
     emitNewMessage,
     emitChatTitleUpdate,
@@ -11,7 +15,7 @@ import {
 export const sendMessage = async (req, res, next) => {
     try {
         let { chatId } = req.params;
-        const { message } = req.body;
+        const { message, stream = false } = req.body;
         const userId = req.user._id;
 
         if (!message) {
@@ -31,17 +35,20 @@ export const sendMessage = async (req, res, next) => {
                 isActive: true,
             });
 
-            if (!defaultModel) {
+            const selectedModel =
+                defaultModel || (await aiModel.findOne({ isActive: true }));
+
+            if (!selectedModel) {
                 return res.status(500).json({
                     success: false,
-                    message: "No active default model available",
+                    message: "No active model available",
                 });
             }
 
             chat = await chatModel.create({
                 userId,
                 title: "New Chat",
-                model: defaultModel._id,
+                model: selectedModel._id,
             });
 
             chatId = chat._id;
@@ -70,6 +77,26 @@ export const sendMessage = async (req, res, next) => {
 
         /* ----------- NOTIFY ROOM: USER MESSAGE ----------- */
         emitNewMessage(chatId, userMessage);
+
+        if (stream) {
+            let title = chat.title;
+
+            if (isNewChat) {
+                title = await generateChatTitle(message);
+                await chatModel.findByIdAndUpdate(chatId, { title });
+                emitChatTitleUpdate(chatId, title);
+            }
+
+            emitAiThinking(chatId, true);
+
+            return res.status(200).json({
+                success: true,
+                chatId,
+                title,
+                userMessage,
+                streamed: true,
+            });
+        }
 
         /* ----------- NOTIFY ROOM: AI IS THINKING ----------- */
         emitAiThinking(chatId, true);
@@ -348,6 +375,7 @@ export const streamMessage = async (req, res, next) => {
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
         res.flushHeaders();
+        emitAiThinking(chatId, true);
 
         /* ----------- GET MESSAGES ----------- */
         const messages = await messageModel
@@ -388,8 +416,26 @@ export const streamMessage = async (req, res, next) => {
 
         /* ----------- END STREAM ----------- */
         res.write(`data: [DONE]\n\n`);
+        emitAiThinking(chatId, false);
         res.end();
     } catch (err) {
-        next(err);
+        try {
+            const { chatId } = req.params;
+            emitAiThinking(chatId, false);
+        } catch {
+            // no-op
+        }
+
+        if (!res.headersSent) {
+            next(err);
+            return;
+        }
+
+        res.write(
+            `data: ${JSON.stringify({
+                error: err.message || "Streaming failed",
+            })}\n\n`,
+        );
+        res.end();
     }
 };

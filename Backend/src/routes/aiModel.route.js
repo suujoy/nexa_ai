@@ -32,6 +32,6 @@ aiModelRouter.patch(
     isAdmin,
     updateDefaultAiModel,
 );
-aiModelRouter.delete("/:modelId", identifyUser, isAdmin, deleteAiModel);
+aiModelRouter.delete("/delete/:modelId", identifyUser, isAdmin, deleteAiModel);
 
 export default aiModelRouter;

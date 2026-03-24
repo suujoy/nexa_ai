@@ -15,6 +15,7 @@ const seedModel = async () => {
     }
 
     await aiModel.create({
+        name: "Groq Llama 3 8B",
         provider: "groq",
         model: "llama3-8b-8192",
         isDefault: true,

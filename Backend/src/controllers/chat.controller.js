@@ -1,4 +1,7 @@
 import chatModel from "../models/chat.model.js";
+import aiModel from "../models/aiModel.model.js";
+import messageModel from "../models/message.model.js";
+import attachmentModel from "../models/attachment.model.js";
 
 export const createChat = async (req, res, next) => {
     try {
@@ -17,12 +20,19 @@ export const createChat = async (req, res, next) => {
                 });
             }
         } else {
-            selectedModel = await aiModel.findOne({ isDefault: true });
+            selectedModel = await aiModel.findOne({
+                isDefault: true,
+                isActive: true,
+            });
+
+            if (!selectedModel) {
+                selectedModel = await aiModel.findOne({ isActive: true });
+            }
 
             if (!selectedModel) {
                 return res.status(400).json({
                     success: false,
-                    message: "No default model found",
+                    message: "No active model found",
                 });
             }
         }
@@ -46,15 +56,10 @@ export const createChat = async (req, res, next) => {
 export const getChats = async (req, res, next) => {
     try {
         const userId = req.user._id;
-        const chats = await chatModel.find({ userId }).populate("model");
-
-        if (chats.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Chats not found",
-                error: "Chats not found",
-            });
-        }
+        const chats = await chatModel
+            .find({ userId })
+            .sort({ updatedAt: -1 })
+            .populate("model");
 
         res.status(200).json({
             success: true,
@@ -69,7 +74,9 @@ export const getChats = async (req, res, next) => {
 export const getChatDetail = async (req, res, next) => {
     try {
         const { chatId } = req.params;
-        const chat = await chatModel.findById(chatId).populate("model");
+        const chat = await chatModel
+            .findOne({ _id: chatId, userId: req.user._id })
+            .populate("model");
         if (!chat) {
             return res.status(404).json({
                 success: false,
@@ -201,14 +208,10 @@ export const updateArchived = async (req, res, next) => {
 export const getPinnedChat = async (req, res, next) => {
     try {
         const userId = req.user._id;
-        const chats = await chatModel.find({ userId, isPinned: true });
-
-        if (chats.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No pinned chats found",
-            });
-        }
+        const chats = await chatModel
+            .find({ userId, isPinned: true })
+            .sort({ updatedAt: -1 })
+            .populate("model");
 
         res.status(200).json({
             success: true,
@@ -223,14 +226,10 @@ export const getPinnedChat = async (req, res, next) => {
 export const getArchivedChat = async (req, res, next) => {
     try {
         const userId = req.user._id;
-        const chats = await chatModel.find({ userId, isArchived: true });
-
-        if (chats.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No archived chats found",
-            });
-        }
+        const chats = await chatModel
+            .find({ userId, isArchived: true })
+            .sort({ updatedAt: -1 })
+            .populate("model");
 
         res.status(200).json({
             success: true,
@@ -284,6 +283,44 @@ export const changeAiModel = async (req, res, next) => {
             success: true,
             message: "AI model changed successfully",
             chat,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteChat = async (req, res, next) => {
+    try {
+        const { chatId } = req.params;
+
+        if (!chatId) {
+            return res.status(400).json({
+                success: false,
+                message: "Chat id is required",
+            });
+        }
+
+        const chat = await chatModel.findOneAndDelete({
+            _id: chatId,
+            userId: req.user._id,
+        });
+
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found",
+            });
+        }
+
+        await Promise.all([
+            messageModel.deleteMany({ chatId }),
+            attachmentModel.deleteMany({ chatId }),
+        ]);
+
+        res.status(200).json({
+            success: true,
+            message: "Chat deleted successfully",
+            chatId,
         });
     } catch (error) {
         next(error);

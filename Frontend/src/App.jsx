@@ -1,11 +1,16 @@
-import React from 'react'
-import { RouterProvider } from 'react-router'
-import { router } from './app/app.route'
+import React, { useEffect } from "react";
+import { RouterProvider } from "react-router";
+import { router } from "./app/app.route";
+import { useSelector } from "react-redux";
 
 const App = () => {
-  return (
-    <RouterProvider router={router} />
-  )
-}
+    const { theme } = useSelector((state) => state.theme);
 
-export default App
+    useEffect(() => {
+        document.documentElement.classList.toggle("dark", theme === "dark");
+    }, [theme]);
+
+    return <RouterProvider router={router} />;
+};
+
+export default App;
