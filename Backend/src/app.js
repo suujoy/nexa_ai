@@ -24,6 +24,23 @@ app.use(
 app.use(cookieParser());
 
 /**
+ * Basic routes for uptime checks / browser open
+ */
+app.get("/", (_req, res) => {
+    res.status(200).json({
+        success: true,
+        message: "Nexa AI backend is running",
+    });
+});
+
+app.get("/health", (_req, res) => {
+    res.status(200).json({
+        success: true,
+        status: "ok",
+    });
+});
+
+/**
  * Routes
  */
 app.use("/api/auth", authRouter);
