@@ -15,14 +15,25 @@ const app = express();
  * Middlewares
  */
 app.use(express.json());
-const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL];
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://nexa-ai-lovat.vercel.app",
+];
 
 app.use(
     cors({
-        origin: allowedOrigins,
+        origin: function (origin, callback) {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("CORS blocked"));
+            }
+        },
         credentials: true,
     }),
 );
+
+app.options("*", cors());
 app.use(cookieParser());
 
 /**
